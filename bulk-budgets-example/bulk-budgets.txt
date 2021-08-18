@@ -1,0 +1,18 @@
+
+# This cmdlets will help you to get to set "budgets" on your subscriptions
+# When you have new batches of subscriptions, you can execute it again.
+
+$subs = Get-AzSubscription
+# filter here for a better target and uncomment
+#$subs = Get-AzSubscription | where {$_.Name -like "*POC*"}
+
+$budgetName = "budget"
+$startingAmount = "500"
+$email = "myemail@company.com"
+$startOfMonth = Get-Date -Year (Get-Date).Year -Month (Get-Date).Month -Day 1 -Hour 0 -Minute 0 -Second 0 -Millisecond 0
+$end = $startOfMonth.AddYears(10)
+
+foreach ($sub in $subs) {
+  select-azsubscription -subscription $sub.Name
+  New-AzConsumptionBudget -Amount $startingAmount -Name $budgetName -Category Cost -StartDate $startOfMonth -EndDate $end -TimeGrain Monthly -ContactEmail $email -NotificationKey email -NotificationThreshold 100
+}

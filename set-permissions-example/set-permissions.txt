@@ -1,0 +1,16 @@
+
+# This cmdlets will help you to get the right permissions on your subscriptions
+# Owner role on subscriptions is required for this to work.
+# When you have new batches of subscriptions, you can execute it again.
+
+$subs = Get-AzSubscription
+# filter here for a better target and uncomment
+#$subs = Get-AzSubscription | where {$_.Name -like "*POC*"}
+
+# put the name of your app principal here
+$appPrincipalName = "cdc-thomas"
+
+$appPrincipal = Get-AzADServicePrincipal -DisplayName $appPrincipalName
+foreach ($sub in $subs) {
+	New-AzRoleAssignment -ObjectId $appPrincipal.id -RoleDefinitionName "Billing Reader" -Scope /subscriptions/$($sub.id)
+}
