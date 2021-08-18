@@ -2,9 +2,12 @@
   
 ## Why this function app ?
 Azure provides data about spent money on subscriptions for the month.  
-The forecasted spendings feature doesn't seem very accurate yet (at the time of this writing). Just a little example: you may received many forecasted alerts at the very beginning of the month.  
+  
+The forecasted spendings feature doesn't seem very accurate yet (at the time of this writing). Just a little example: you may receive many forecasted alert notifcations at the very beginning of the month.  
+  
 This function app automatically gathers and outputs actual budget consumption by calling Azure API.  
-It will also allow you to know if you already spend more money than you should have (budget amount / number of days in the month * today's number of the month compared to already spent money)
+  
+It will also allow you to know if you already spent more money than you should have (already spent money compared to budget amount / number of days in the month * today's number of the month)  
   
 Coupled with a common monitoring system (nagios, centreon, zabbix, or whatever you use), you'll automatically get alerted as soon as you reached you budget.  
 </br>
@@ -85,8 +88,11 @@ With the default value, it will take around 30 seconds for ~100 subscriptions.
 When this function will be called by your monitoring system, you likely might forget about it.  
 The signature output will act a reminder since you'll get it in the results to your monitoring system.  
   
+</br>
 When deployment is done, you can get your Azure function's URL in the output variables.  
+  
 Trigger it manually in your favorite browser and eventually look at the logs in the function.  
+  
 After you execute the function for the first time, it might (will) need 5-10 minutes before it works because it has to install Az module. You even might get an HTTP 500 error. Give the function some time to initialize, re-execute it again if necessary and be patient, it will work.  
 </br>
 </br>
@@ -101,10 +107,9 @@ Calling the function once a day should be enough.
 You have the choice between 2 different approaches:  
 * 1 function call that will give results for all subscriptions  
 * 1 function call per subscription by specifying the subscriptionid in the GET parameters: &subscriptionid=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx  
-I would prefer option 2.  
+I would prefer option 2 because if you use option and your account lacks permission on a subscription, you just won't get it in the output. By call specifically 1 check per subscription and you manage to add it to your monitoring system properly (by process and/or automation), you can't miss it.  
   
 You can modify "warning" and "critical" thresholds within the GET parameters of the URL (just add &warning=80&critical=90 for example).  
-  
 Default values are 90 and 100 percent.  
   
 Be sure to have an appropriate timeout (60s or more) because if you have many subscriptions, the function will need some time to execute.  
