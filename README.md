@@ -15,6 +15,7 @@ Coupled with a common monitoring system (nagios, centreon, zabbix, or whatever y
 * Billing reader RBAC role for this account on all subscriptions you want to monitor.  
 You can find powershell cmdlets in "set-permissions-example" folder ; subscription owner can execute them in a simple Azure cloudshell.  
 Basically, that would be something like:  
+</br>
 
     $subs = Get-AzSubscription
     $appPrincipal = Get-AzADServicePrincipal -DisplayName "my-app-account-name"  
@@ -22,9 +23,11 @@ Basically, that would be something like:
 	  New-AzRoleAssignment -ObjectId $appPrincipal.id -RoleDefinitionName "Billing Reader" -Scope /subscriptions/$($sub.id)
     }  
 </br>
+
 * A budget set in your subscription with a name of your choice (but the same everywhere).  
 You can find powershell cmdlets in "bulk-budgets-example" folder ; subscription owner can execute them in a simple Azure cloudshell.  
 That would be something like:  
+</br>
 
     $subs = Get-AzSubscription
 	
