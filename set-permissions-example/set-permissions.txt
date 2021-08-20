@@ -8,7 +8,7 @@ $subs = Get-AzSubscription
 #$subs = Get-AzSubscription | where {$_.Name -like "*POC*"}
 
 # put the name of your app principal here
-$appPrincipalName = "cdc-thomas"
+$appPrincipalName = "my-app-account-name"
 
 $appPrincipal = Get-AzADServicePrincipal -DisplayName $appPrincipalName
 foreach ($sub in $subs) {
