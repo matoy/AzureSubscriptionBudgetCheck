@@ -156,7 +156,7 @@ if ($subs.count -eq 0) {
 # add ending status and signature to results
 $body += "`n$signature`n"
 if ($alertCritical) {
-    $body = "Status CRITICAL - Allowed amount has been reached on $($alertCritical+alertWarning) subscription(s)!`n" + $body
+    $body = "Status CRITICAL - Allowed amount has been reached on $($alertCritical+$alertWarning) subscription(s)!`n" + $body
 }
 elseif ($alertWarning) {
     $body = "Status WARNING on $alertWarning subscription(s)`n" + $body
