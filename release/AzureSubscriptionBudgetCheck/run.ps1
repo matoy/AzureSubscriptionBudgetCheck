@@ -41,14 +41,16 @@ $body = ""
 $dayOfMonth = (Get-Date).Day
 $daysInMonth = [datetime]::DaysInMonth([datetime]::Now.year,[datetime]::Now.month)
 $budgetName = $env:BudgetName
+$signature = $env:Signature
+$maxConcurrentJobs = [int] $env:MaxConcurrentJobs
 
 # connect with SPN account creds
-$TenantId = $env:TenantId
+$tenantId = $env:TenantId
 $applicationId = $env:AzureSubscriptionBudgetCheckApplicationID
 $password = $env:AzureSubscriptionBudgetCheckSecret
 $securePassword = ConvertTo-SecureString -String $password -AsPlainText -Force
-$Credential = new-object -typename System.Management.Automation.PSCredential -argumentlist $applicationId, $securePassword
-Connect-AzAccount -Credential $Credential -Tenant $TenantId -ServicePrincipal
+$credential = new-object -typename System.Management.Automation.PSCredential -argumentlist $applicationId, $securePassword
+Connect-AzAccount -Credential $credential -Tenant $tenantId -ServicePrincipal
 
 # get token
 $azContext = Get-AzContext
@@ -57,29 +59,28 @@ $profileClient = New-Object -TypeName Microsoft.Azure.Commands.ResourceManager.C
 $token = $profileClient.AcquireAccessToken($azContext.Subscription.TenantId)
 
 # create http headers
-$Headers = @{}
-$Headers.Add("Authorization", "bearer " + "$($Token.Accesstoken)")
-$Headers.Add("contenttype", "application/json")
+$headers = @{}
+$headers.Add("Authorization", "bearer " + "$($Token.Accesstoken)")
+$headers.Add("contenttype", "application/json")
 
 #$subs = Get-AzSubscription -SubscriptionId $subscriptionid | Sort-Object Name
 if ($subscriptionid -eq "") {
 	$uri = "https://management.azure.com/subscriptions?api-version=2020-01-01"
-	$subs = (Invoke-RestMethod -Method Get -Uri $uri -Headers $Headers).value | Sort-Object displayName
+	$subs = (Invoke-RestMethod -Method Get -Uri $uri -Headers $headers).value | Sort-Object displayName
 }
 else {
 	$uri = "https://management.azure.com/subscriptions/$($subscriptionid)?api-version=2020-01-01"
-	$subs = (Invoke-RestMethod -Method Get -Uri $uri -Headers $Headers)	
+	$subs = (Invoke-RestMethod -Method Get -Uri $uri -Headers $headers)	
 }
 
 # if many subscriptions, too long execution would cause an http timeout from 
 # the monitoring system calling the function
 # multithreading is required to avoid long execution time if many subscriptions
-$MaxConcurrentJobs = [int] $env:MaxConcurrentJobs
-if ($subs.count -lt $MaxConcurrentJobs) {
+if ($subs.count -lt $maxConcurrentJobs) {
 	$MaxRunspaces = $subs.count
 }
 else {
-	$MaxRunspaces = $MaxConcurrentJobs
+	$MaxRunspaces = $maxConcurrentJobs
 }
 $RunspacePool = [runspacefactory]::CreateRunspacePool(1, $MaxRunspaces)
 $RunspacePool.Open()
@@ -89,10 +90,10 @@ foreach ($sub in $subs) {
 	$PowerShell = [powershell]::Create()
 	$PowerShell.RunspacePool = $RunspacePool
 	[void]$PowerShell.AddScript({
-	    Param ($uri, $Headers, $sub, $budgetName, $dayOfMonth, $daysInMonth, $warning, $critical)
+	    Param ($uri, $headers, $sub, $budgetName, $dayOfMonth, $daysInMonth, $warning, $critical)
 
 		$out = ""
-		$budget = (Invoke-RestMethod -Method Get -Uri $uri -Headers $Headers)
+		$budget = (Invoke-RestMethod -Method Get -Uri $uri -Headers $headers)
 		if (!$budget) {
 			$out += "CRITICAL - $($sub.displayName): no '$budgetName' budget found in this subscription"
 		}
@@ -119,7 +120,7 @@ foreach ($sub in $subs) {
 			}
 		}
 		echo $out
-	}).AddArgument($uri).AddArgument($Headers).AddArgument($sub).AddArgument($budgetName).AddArgument($dayOfMonth).AddArgument($daysInMonth).AddArgument($warning).AddArgument($critical)
+	}).AddArgument($uri).AddArgument($headers).AddArgument($sub).AddArgument($budgetName).AddArgument($dayOfMonth).AddArgument($daysInMonth).AddArgument($warning).AddArgument($critical)
 	
 	$JobObj = New-Object -TypeName PSObject -Property @{
 		Runspace = $PowerShell.BeginInvoke()
@@ -153,10 +154,9 @@ if ($subs.count -eq 0) {
 	}
 }
 # add ending status and signature to results
-$signature = $env:Signature
 $body += "`n$signature`n"
 if ($alertCritical) {
-    $body = "Status CRITICAL - Allowed amount has been reached on $alertCritical subscription(s)!`n" + $body
+    $body = "Status CRITICAL - Allowed amount has been reached on $($alertCritical+alertWarning) subscription(s)!`n" + $body
 }
 elseif ($alertWarning) {
     $body = "Status WARNING on $alertWarning subscription(s)`n" + $body
