@@ -77,6 +77,7 @@ Name of the budget object you have in all your subscriptions.
 * Zip Release URL:  
 For testing, you can leave it like it.  
 For more serious use, I would advise you host your own zip file so that you wouldn't be subject to release changes done in this repository.  
+See below for more details.  
   
 * Max Concurrent Jobs:  
 An API call to Azure will be made for each subscription.  
@@ -121,4 +122,11 @@ Be sure to have an appropriate timeout (60s or more) because if you have many su
   
 This is an example of what you'd get in Centreon:  
 ![alt text](https://github.com/matoy/AzureSubscriptionBudgetCheck/blob/main/img/screenshot2.png?raw=true)  
-  
+</br>
+</br>
+
+## How to stop relying on this repository's zip  
+To make your function to stop relying on this repo's zip and become independant, follow these steps:  
+* remove zipReleaseURL app setting and restart app  
+* in "App files" section, edit "requirements.psd1" and uncomment the line: 'Az' = '6.*'  
+* in "Functions" section, add a new function called "AzureSpnCredentialsExpiryCheck" and paste in it the content of the file release/AzureSpnCredentialsExpiryCheck/run.ps1 in this repository  
