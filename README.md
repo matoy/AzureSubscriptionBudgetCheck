@@ -129,4 +129,4 @@ This is an example of what you'd get in Centreon:
 To make your function to stop relying on this repo's zip and become independant, follow these steps:  
 * remove zipReleaseURL app setting and restart app  
 * in "App files" section, edit "requirements.psd1" and uncomment the line: 'Az' = '6.*'  
-* in "Functions" section, add a new function called "AzureSpnCredentialsExpiryCheck" and paste in it the content of the file release/AzureSpnCredentialsExpiryCheck/run.ps1 in this repository  
+* in "Functions" section, add a new function called "AzureSubscriptionBudgetCheck" and paste in it the content of the file release/AzureSubscriptionBudgetCheck/run.ps1 in this repository  
