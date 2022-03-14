@@ -10,7 +10,8 @@ Write-Host "PowerShell HTTP trigger function processed a request."
 #
 # TT 20210225 AzureSubscriptionBudgetCheck
 # This script is executed by an Azure Function App
-# It checks current spending on subscription(s) and compare it to defined budget
+# It checks money spent on last 31 days on subscription(s) and compare it to 
+# defined budget
 # It can be triggered by any monitoring system to get the results and status
 #
 # warning and critical threshold can be passed in the GET parameters
@@ -38,8 +39,6 @@ if (-not $subscriptionid) {
 $alertWarning = 0
 $alertCritical = 0
 $body = ""
-$dayOfMonth = (Get-Date).Day
-$daysInMonth = [datetime]::DaysInMonth([datetime]::Now.year,[datetime]::Now.month)
 $budgetName = $env:BudgetName
 $signature = $env:Signature
 $maxConcurrentJobs = [int] $env:MaxConcurrentJobs
@@ -86,25 +85,34 @@ $RunspacePool = [runspacefactory]::CreateRunspacePool(1, $MaxRunspaces)
 $RunspacePool.Open()
 $Jobs = New-Object System.Collections.ArrayList
 foreach ($sub in $subs) {
-	$uri = "https://management.azure.com/subscriptions/$($sub.subscriptionId)/providers/Microsoft.Consumption/budgets/$($budgetName)?api-version=2019-10-01"
 	$PowerShell = [powershell]::Create()
 	$PowerShell.RunspacePool = $RunspacePool
 	[void]$PowerShell.AddScript({
-	    Param ($uri, $headers, $sub, $budgetName, $dayOfMonth, $daysInMonth, $warning, $critical)
+	    Param ($headers, $sub, $budgetName, $warning, $critical)
 
 		$out = ""
+		$uri = "https://management.azure.com/subscriptions/$($sub.subscriptionId)/providers/Microsoft.Consumption/budgets/$($budgetName)?api-version=2019-10-01"
 		$budget = (Invoke-RestMethod -Method Get -Uri $uri -Headers $headers)
 		if (!$budget) {
 			$out += "CRITICAL - $($sub.displayName): no '$budgetName' budget found in this subscription"
 		}
 		else {
-			$CurrentSpendAmount = [math]::Round($budget.properties.CurrentSpend.Amount)
-			$Amount = [math]::Round($budget.properties.Amount)
+			$dateStart = (Get-Date).AddDays(-31).ToString("yyyy-MM-dd")		
+			$dateEnd = (Get-Date).ToString("yyyy-MM-dd")
+			$uri = "https://management.azure.com/subscriptions/$($subscriptionid)/providers/Microsoft.Consumption/usageDetails?`$filter=properties%2FusageStart ge %27$dateStart%27 and properties%2FusageEnd le %27$dateEnd%27&api-version=2021-10-01"
+			$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
+			$usage = $results.value
+			while ($results.nextLink) {
+					$uri = $results.nextLink
+					$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
+					$usage += $results.value
+				}
+			$spentAmount = [math]::Round(($usage.properties | Measure-Object -Sum cost).Sum)
+			$maxAllowed = [math]::Round($budget.properties.Amount)
 			$currencyName = $budget.properties.CurrentSpend.Unit
-			$maxAllowed = [math]::Round($dayOfMonth * $Amount / $daysInMonth)
-			$diff = $maxAllowed - $CurrentSpendAmount
-			$percent = [math]::Round(100 * $CurrentSpendAmount / $maxAllowed, 2)
-			if ($CurrentSpendAmount -gt $maxAllowed) {
+			$diff = $maxAllowed - $spentAmount
+			$percent = [math]::Round(100 * $spentAmount / $maxAllowed, 2)
+			if ($spentAmount -gt $maxAllowed) {
 				$diff = -$diff
 				$out += "CRITICAL ($percent%) - $($sub.displayName): allowed amount has been exceeded by $diff $currencyName"
 			}
@@ -120,7 +128,7 @@ foreach ($sub in $subs) {
 			}
 		}
 		echo $out
-	}).AddArgument($uri).AddArgument($headers).AddArgument($sub).AddArgument($budgetName).AddArgument($dayOfMonth).AddArgument($daysInMonth).AddArgument($warning).AddArgument($critical)
+	}).AddArgument($headers).AddArgument($sub).AddArgument($budgetName).AddArgument($warning).AddArgument($critical)
 	
 	$JobObj = New-Object -TypeName PSObject -Property @{
 		Runspace = $PowerShell.BeginInvoke()
