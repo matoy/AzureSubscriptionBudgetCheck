@@ -5,9 +5,9 @@ Azure provides data about spent money on subscriptions for the month.
   
 The forecasted spendings feature doesn't seem very accurate yet (at the time of this writing). Just a little example: you may receive many forecasted alert notifcations at the very beginning of the month.  
   
-This function app automatically gathers and outputs actual budget consumption by calling Azure API.  
+This function app automatically gathers and outputs budget consumption for the last 31 days by calling Azure API.  
   
-It will also allow you to know if you already spent more money than you should have (already spent money compared to budget amount / number of days in the month * today's number of the month)  
+It will also allow you to know if you already spent more money than you should have (actual spent money compared to budget amount for the last 31 days)  
   
 Coupled with a common monitoring system (nagios, centreon, zabbix, or whatever you use), you'll automatically get alerted as soon as you reached you budget.  
 </br>
