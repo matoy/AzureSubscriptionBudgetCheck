@@ -10,7 +10,7 @@ Write-Host "PowerShell HTTP trigger function processed a request."
 #
 # TT 20210225 AzureSubscriptionBudgetCheck
 # This script is executed by an Azure Function App
-# It checks money spent on last 31 days on subscription(s) and compare it to 
+# It checks money spent on last 30 days on subscription(s) and compare it to 
 # defined budget
 # It can be triggered by any monitoring system to get the results and status
 #
