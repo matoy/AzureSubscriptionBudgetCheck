@@ -97,9 +97,9 @@ foreach ($sub in $subs) {
 			$out += "CRITICAL - $($sub.displayName): no '$budgetName' budget found in this subscription"
 		}
 		else {
-			$dateStart = (Get-Date).AddDays(-31).ToString("yyyy-MM-dd")		
+			$dateStart = (Get-Date).AddMonths(-1).AddDays(-1).ToString("yyyy-MM-dd")
 			$dateEnd = (Get-Date).ToString("yyyy-MM-dd")
-			$uri = "https://management.azure.com/subscriptions/$($subscriptionid)/providers/Microsoft.Consumption/usageDetails?`$filter=properties%2FusageStart ge %27$dateStart%27 and properties%2FusageEnd le %27$dateEnd%27&api-version=2021-10-01"
+			$uri = "https://management.azure.com/subscriptions/$($sub.subscriptionId)/providers/Microsoft.Consumption/usageDetails?`$filter=properties%2FusageStart ge %27$dateStart%27 and properties%2FusageEnd le %27$dateEnd%27&api-version=2021-10-01"
 			$results = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
 			$usage = $results.value
 			while ($results.nextLink) {
@@ -114,7 +114,7 @@ foreach ($sub in $subs) {
 			$percent = [math]::Round(100 * $spentAmount / $maxAllowed, 2)
 			if ($spentAmount -gt $maxAllowed) {
 				$diff = -$diff
-				$out += "CRITICAL ($percent%) - $($sub.displayName): allowed amount has been exceeded by $diff $currencyName"
+				$out += "CRITICAL (spendAmount: $spentAmount > $percent%) - $($sub.displayName): allowed amount has been exceeded by $diff $currencyName"
 			}
 			else {
 				$status = "OK"
@@ -124,7 +124,7 @@ foreach ($sub in $subs) {
 				elseif ($percent -gt $warning) {
 					$status = "WARNING"
 				}
-				$out += "$status ($percent%) - $($sub.displayName): $diff $currencyName below maximum allowed amount"
+				$out += "$status (spendAmount: $spentAmount > $percent%) - $($sub.displayName): $diff $currencyName below maximum allowed amount"
 			}
 		}
 		echo $out
@@ -138,7 +138,7 @@ foreach ($sub in $subs) {
 }
 while ($Jobs.Runspace.IsCompleted -contains $false) {
 	$running = ($Jobs.Runspace | where {$_.IsCompleted -eq $false}).count
-    Write-Host (Get-date).Tostring() "Still $running jobs running..."
+    Write-Host (Get-date).Tostring() "Still $running jobs running... $subscriptionid"
 	Start-Sleep 1
 }
 foreach ($job in $Jobs) {
