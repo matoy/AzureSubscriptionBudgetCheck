@@ -114,7 +114,7 @@ foreach ($sub in $subs) {
 			$percent = [math]::Round(100 * $spentAmount / $maxAllowed, 2)
 			if ($spentAmount -gt $maxAllowed) {
 				$diff = -$diff
-				$out += "CRITICAL (spent amount: $spentAmount / $percent%) - $($sub.displayName): allowed amount has been exceeded by $diff $currencyName"
+				$out += "CRITICAL ($percent%) - $($sub.displayName): spent amount is $spentAmount $currencyName - allowed amount has been exceeded by $diff $currencyName"
 			}
 			else {
 				$status = "OK"
@@ -124,7 +124,7 @@ foreach ($sub in $subs) {
 				elseif ($percent -gt $warning) {
 					$status = "WARNING"
 				}
-				$out += "$status (spent amount: $spentAmount / $percent%) - $($sub.displayName): $diff $currencyName below maximum allowed amount"
+				$out += "$status ($percent%) - $($sub.displayName): spent amount is $spentAmount $currencyName - $diff $currencyName below maximum allowed amount"
 			}
 		}
 		echo $out
