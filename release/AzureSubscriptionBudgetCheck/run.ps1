@@ -116,6 +116,9 @@ foreach ($sub in $subs) {
 				$diff = -$diff
 				$out += "CRITICAL ($percent%) - $($sub.displayName): spent amount is $spentAmount $currencyName - allowed amount has been exceeded by $diff $currencyName"
 			}
+			elseif ($spentAmount -eq 0) {
+				$out += "CRITICAL ($percent%) - $($sub.displayName): spent amount is $spentAmount $currencyName - is that normal?"
+			}
 			else {
 				$status = "OK"
 				if ($percent -gt $critical) {
